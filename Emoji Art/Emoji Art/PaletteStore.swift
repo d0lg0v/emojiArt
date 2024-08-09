@@ -8,7 +8,7 @@
 import SwiftUI
 
 extension UserDefaults {
-    func palletes(forKey key: String) -> [Palette] {
+    func palettes(forKey key: String) -> [Palette] {
         if let jsonData = data(forKey: key),
            let decodedPalettes = try? JSONDecoder().decode([Palette].self, from: jsonData) {
             return decodedPalettes
@@ -16,24 +16,36 @@ extension UserDefaults {
             return []
         }
     }
-    
     func set(_ palettes: [Palette], forKey key: String) {
         let data = try? JSONEncoder().encode(palettes)
         set(data, forKey: key)
     }
 }
-class PaletteStore: ObservableObject {
+
+extension PaletteStore: Hashable {
+    static func == (lhs: PaletteStore, rhs: PaletteStore) -> Bool {
+        lhs.name == rhs.name
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+    }
+}
+
+class PaletteStore: ObservableObject, Identifiable {
     let name: String
     
-    private var userDefaultsKey: String { "PalleteStore:" + name }
+    var id: String { name }
+    
+    private var userDefaultsKey: String { "PaletteStore:" + name }
     
     var palettes: [Palette] {
         get {
-            UserDefaults.standard.palletes(forKey: userDefaultsKey)
+            UserDefaults.standard.palettes(forKey: userDefaultsKey)
         }
         set {
             if !newValue.isEmpty {
-                UserDefaults.standard.set(newValue, forKey: name)
+                UserDefaults.standard.set(newValue, forKey: userDefaultsKey)
                 objectWillChange.send()
             }
         }
@@ -53,8 +65,9 @@ class PaletteStore: ObservableObject {
     
     var cursorIndex: Int {
         get { boundsCheckedPaletteIndex(_cursorIndex) }
-        set { _cursorIndex = boundsCheckedPaletteIndex(newValue)}
+        set { _cursorIndex = boundsCheckedPaletteIndex(newValue) }
     }
+    
     
     private func boundsCheckedPaletteIndex(_ index: Int) -> Int {
         var index = index % palettes.count
@@ -102,5 +115,3 @@ class PaletteStore: ObservableObject {
         append(Palette(name: name, emojis: emojis))
     }
 }
-
-

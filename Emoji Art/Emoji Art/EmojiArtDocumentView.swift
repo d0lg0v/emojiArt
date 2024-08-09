@@ -13,7 +13,7 @@ struct EmojiArtDocumentView: View {
     @ObservedObject var document: EmojiArtDocument
     
     private let paletteEmojiSize: CGFloat = 40
-    
+
     var body: some View {
         VStack(spacing: 0) {
             documentBody
@@ -26,12 +26,11 @@ struct EmojiArtDocumentView: View {
     
     private var documentBody: some View {
         GeometryReader { geometry in
-            ZStack{
+            ZStack {
                 Color.white
                 documentContents(in: geometry)
                     .scaleEffect(zoom * gestureZoom)
                     .offset(pan + gesturePan)
-                    
             }
             .gesture(panGesture.simultaneously(with: zoomGesture))
             .dropDestination(for: Sturldata.self) { sturldatas, location in
@@ -60,7 +59,7 @@ struct EmojiArtDocumentView: View {
                 .position(emoji.position.in(geometry))
         }
     }
-    
+
     @State private var zoom: CGFloat = 1
     @State private var pan: CGOffset = .zero
     
@@ -79,11 +78,11 @@ struct EmojiArtDocumentView: View {
     
     private var panGesture: some Gesture {
         DragGesture()
-            .updating($gesturePan) { value, gesturePan, _ in
-                gesturePan = value.translation
+            .updating($gesturePan) { inMotionDragGestureValue, gesturePan, _ in
+                gesturePan = inMotionDragGestureValue.translation
             }
-            .onEnded { value in
-                pan += value.translation
+            .onEnded { endingDragGestureValue in
+                pan += endingDragGestureValue.translation
             }
     }
     
@@ -94,9 +93,10 @@ struct EmojiArtDocumentView: View {
                 document.setBackground(url)
                 return true
             case .string(let emoji):
-                document.addEmoji(emoji,
-                                  at: emojiPosition(at: location, in: geometry),
-                                  size: paletteEmojiSize / zoom
+                document.addEmoji(
+                    emoji,
+                    at: emojiPosition(at: location, in: geometry),
+                    size: paletteEmojiSize / zoom
                 )
                 return true
             default:
@@ -105,9 +105,8 @@ struct EmojiArtDocumentView: View {
         }
         return false
     }
-     
-    private func emojiPosition(at location: CGPoint,
-                               in geometry: GeometryProxy) -> Emoji.Position {
+    
+    private func emojiPosition(at location: CGPoint, in geometry: GeometryProxy) -> Emoji.Position {
         let center = geometry.frame(in: .local).center
         return Emoji.Position(
             x: Int((location.x - center.x - pan.width) / zoom),
@@ -120,4 +119,3 @@ struct EmojiArtDocumentView: View {
     EmojiArtDocumentView(document: EmojiArtDocument())
         .environmentObject(PaletteStore(named: "Preview"))
 }
-
